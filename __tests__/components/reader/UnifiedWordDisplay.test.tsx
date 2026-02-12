@@ -1,6 +1,6 @@
 /**
  * UnifiedWordDisplay Component Tests
- * Tests for the unified word display layout
+ * Tests for the center-anchored word display layout
  */
 
 import { describe, it, expect, vi } from "vitest";
@@ -14,7 +14,7 @@ describe("UnifiedWordDisplay", () => {
     ...props,
   });
 
-  it("renders all tokens in a single flexbox", () => {
+  it("renders all tokens with center-anchored layout", () => {
     const tokens: Token[] = [
       createToken("word1"),
       createToken("word2"),
@@ -55,17 +55,19 @@ describe("UnifiedWordDisplay", () => {
       />
     );
 
-    const slots = container.querySelectorAll(".unified-word-slot");
+    // Get all spans with opacity styles
+    const words = container.querySelectorAll('span[style*="opacity"]');
     
-    // Check opacity values on slots
-    expect(slots[0]).toHaveStyle({ opacity: 0.20 }); // distance = 2
-    expect(slots[1]).toHaveStyle({ opacity: 0.45 }); // distance = 1
-    expect(slots[2]).toHaveStyle({ opacity: 1.0 });  // distance = 0 (center)
-    expect(slots[3]).toHaveStyle({ opacity: 0.45 }); // distance = 1
-    expect(slots[4]).toHaveStyle({ opacity: 0.20 }); // distance = 2
+    // Check opacity values
+    // Note: The order is left-to-right in the DOM: left group, center, right group
+    expect(words[0]).toHaveStyle({ opacity: 0.20 }); // far (distance = -2)
+    expect(words[1]).toHaveStyle({ opacity: 0.45 }); // near (distance = -1)
+    expect(words[2]).toHaveStyle({ opacity: 1.0 });  // ACTIVE (distance = 0, center)
+    expect(words[3]).toHaveStyle({ opacity: 0.45 }); // near2 (distance = 1)
+    expect(words[4]).toHaveStyle({ opacity: 0.20 }); // far2 (distance = 2)
   });
 
-  it("marks center word with data-center attribute", () => {
+  it("center word is perfectly positioned at screen center", () => {
     const tokens: Token[] = [
       createToken("word1"),
       createToken("ACTIVE"),
@@ -80,10 +82,12 @@ describe("UnifiedWordDisplay", () => {
       />
     );
 
-    const slots = container.querySelectorAll(".unified-word-slot");
-    expect(slots[0]).toHaveAttribute("data-center", "false");
-    expect(slots[1]).toHaveAttribute("data-center", "true");
-    expect(slots[2]).toHaveAttribute("data-center", "false");
+    // Find the center word container (absolute positioned with left-1/2 top-1/2)
+    const centerContainer = container.querySelector('div[style*="translate(-50%, -50%)"]');
+    expect(centerContainer).toBeInTheDocument();
+    expect(centerContainer).toHaveStyle({
+      transform: "translate(-50%, -50%)",
+    });
   });
 
   it("displays ORP line indicator", () => {
@@ -124,8 +128,9 @@ describe("UnifiedWordDisplay", () => {
       />
     );
 
-    const display = container.querySelector(".unified-word-display");
-    expect(display).toHaveStyle({ fontSize: "48px" });
+    // The relative container has the fontSize
+    const relativeContainer = container.querySelector('div.relative');
+    expect(relativeContainer).toHaveStyle({ fontSize: "48px" });
   });
 
   it("handles empty slots at document boundaries", () => {
@@ -146,8 +151,10 @@ describe("UnifiedWordDisplay", () => {
     );
 
     const words = container.querySelectorAll('[style*="opacity"]');
-    expect(words[0]).toHaveStyle({ opacity: 0 }); // Empty slot
-    expect(words[4]).toHaveStyle({ opacity: 0 }); // Empty slot
+    // First word should be hidden (opacity: 0)
+    expect(words[0]).toHaveStyle({ opacity: 0 });
+    // Last word should be hidden (opacity: 0)
+    expect(words[words.length - 1]).toHaveStyle({ opacity: 0 });
   });
 
   it("applies token styling (bold, italic, code)", () => {
@@ -179,7 +186,7 @@ describe("UnifiedWordDisplay", () => {
     expect(style.fontFamily).toContain("mono");
   });
 
-  it("has correct layout structure", () => {
+  it("has correct layout structure with three positioned groups", () => {
     const tokens: Token[] = [
       createToken("word1"),
       createToken("ACTIVE"),
@@ -194,26 +201,22 @@ describe("UnifiedWordDisplay", () => {
       />
     );
 
-    const wrapper = container.querySelector(".unified-word-display-wrapper");
-    expect(wrapper).toHaveStyle({
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-    });
+    // Check for the main wrapper with aria attributes
+    const wrapper = container.querySelector('[role="main"]');
+    expect(wrapper).toHaveAttribute("aria-label", "Reading area");
+    expect(wrapper).toHaveAttribute("aria-live", "polite");
 
-    const display = container.querySelector(".unified-word-display");
-    expect(display).toHaveStyle({
-      display: "flex",
-    });
-    // Check individual properties since computed styles may vary
-    const displayStyle = window.getComputedStyle(display!);
-    expect(displayStyle.display).toBe("flex");
-    expect(displayStyle.alignItems).toBe("center");
-    expect(displayStyle.justifyContent).toBe("center");
+    // Check for relative container
+    const relativeContainer = container.querySelector('div.relative');
+    expect(relativeContainer).toBeInTheDocument();
+
+    // Check for absolute positioned groups
+    const absoluteGroups = container.querySelectorAll('div.absolute');
+    // Should have at least 2: left group and center word (right group exists too)
+    expect(absoluteGroups.length).toBeGreaterThanOrEqual(2);
   });
 
-  it("uses correct windowRadius with centerIndex", () => {
-    // For windowRadius=2, centerIndex=2, we have 5 tokens total
+  it("uses fixed gap spacing between words", () => {
     const tokens: Token[] = [
       createToken("word-2"),
       createToken("word-1"),
@@ -230,15 +233,10 @@ describe("UnifiedWordDisplay", () => {
       />
     );
 
-    const slots = container.querySelectorAll(".unified-word-slot");
-    expect(slots.length).toBe(5);
-    
-    // Verify distance attributes
-    expect(slots[0]).toHaveAttribute("data-distance", "-2");
-    expect(slots[1]).toHaveAttribute("data-distance", "-1");
-    expect(slots[2]).toHaveAttribute("data-distance", "0");
-    expect(slots[3]).toHaveAttribute("data-distance", "1");
-    expect(slots[4]).toHaveAttribute("data-distance", "2");
+    // Check that flex containers use gap-8 class
+    const flexContainers = container.querySelectorAll('div.flex.gap-8');
+    // Should have left and right groups with gap-8
+    expect(flexContainers.length).toBeGreaterThanOrEqual(2);
   });
 
   it("memoizes correctly and doesn't re-render unnecessarily", () => {
@@ -283,9 +281,10 @@ describe("UnifiedWordDisplay", () => {
     );
 
     expect(screen.getByText("ONLY")).toBeInTheDocument();
-    const slot = container.querySelector(".unified-word-slot");
-    expect(slot).toHaveStyle({ opacity: 1.0 });
-    expect(slot).toHaveAttribute("data-center", "true");
+    
+    // Center word should have full opacity
+    const centerWord = screen.getByText("ONLY");
+    expect(centerWord).toHaveStyle({ opacity: 1.0 });
   });
 
   it("renders with aria attributes", () => {
@@ -303,7 +302,7 @@ describe("UnifiedWordDisplay", () => {
       />
     );
 
-    const wrapper = container.querySelector(".unified-word-display-wrapper");
+    const wrapper = container.querySelector('[role="main"]');
     expect(wrapper).toHaveAttribute("role", "main");
     expect(wrapper).toHaveAttribute("aria-label", "Reading area");
     expect(wrapper).toHaveAttribute("aria-live", "polite");
@@ -324,10 +323,63 @@ describe("UnifiedWordDisplay", () => {
       />
     );
 
-    const slots = container.querySelectorAll(".unified-word-slot");
-    slots.forEach((slot) => {
-      const style = window.getComputedStyle(slot);
-      expect(style.transition).toContain("opacity");
+    // Check that word spans have transition-opacity class
+    const wordSpans = container.querySelectorAll('span.transition-opacity');
+    expect(wordSpans.length).toBeGreaterThan(0);
+    
+    wordSpans.forEach((span) => {
+      expect(span).toHaveClass("transition-opacity");
+      expect(span).toHaveClass("duration-150");
     });
+  });
+
+  it("left words expand outward from center", () => {
+    const tokens: Token[] = [
+      createToken("word1"),
+      createToken("word2"),
+      createToken("ACTIVE"),
+      createToken("word4"),
+      createToken("word5"),
+    ];
+
+    const { container } = render(
+      <UnifiedWordDisplay
+        tokens={tokens}
+        centerIndex={2}
+        fontSize={36}
+      />
+    );
+
+    // Left group should be positioned with right-1/2 and negative translateX
+    const leftGroup = container.querySelector('div.right-1\\/2');
+    expect(leftGroup).toBeInTheDocument();
+    // Should have negative translateX (moving away from center)
+    const transform = leftGroup?.getAttribute('style');
+    expect(transform).toContain("translateX(-");
+  });
+
+  it("right words expand outward from center", () => {
+    const tokens: Token[] = [
+      createToken("word1"),
+      createToken("word2"),
+      createToken("ACTIVE"),
+      createToken("word4"),
+      createToken("word5"),
+    ];
+
+    const { container } = render(
+      <UnifiedWordDisplay
+        tokens={tokens}
+        centerIndex={2}
+        fontSize={36}
+      />
+    );
+
+    // Right group should be positioned with left-1/2 and positive translateX
+    const rightGroup = container.querySelector('div.left-1\\/2.flex.gap-8');
+    expect(rightGroup).toBeInTheDocument();
+    // Should have positive translateX
+    const transform = rightGroup?.getAttribute('style');
+    expect(transform).toContain("translateX(2rem)");
   });
 });

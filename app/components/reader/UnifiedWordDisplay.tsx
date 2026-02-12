@@ -42,26 +42,71 @@ function calculateOpacity(distanceFromCenter: number): number {
 }
 
 /**
- * UnifiedWordDisplay - Static fixed container approach
+ * UnifiedWordDisplay - Center-anchored positioning approach
  * 
  * Key principles:
- * 1. Container is FIXED - position: fixed, never moves
- * 2. Container size is CONSTANT - w-[90vw], doesn't change
- * 3. Only TEXT CONTENT changes - not DOM structure, not layout
- * 4. Use justify-around - works because container width is fixed
- * 5. No calculations, no slots, no transforms - just simple static layout
+ * 1. Center word is ABSOLUTELY positioned at screen center (left: 50%, translateX: -50%)
+ * 2. Left/right words expand OUTWARD from center anchor
+ * 3. FIXED gap spacing between words (gap-8 = 2rem)
+ * 4. NO container width constraints - sizes to content
+ * 5. NO justify-between/space-distribution - explicit gaps only
  * 
  * Why this works:
- * - Container is fixed in viewport → never moves
- * - Container width is constant → spacing calculations don't change
- * - Only textContent updates → no layout recalculation needed
- * - Simple flexbox → browser handles spacing efficiently
+ * - Center word never moves → perfect stability
+ * - Left/right groups positioned relative to center → predictable layout
+ * - Fixed gaps → consistent spacing regardless of word lengths
+ * - Only text content changes → no layout recalculation
+ * - Absolute positioning → no flex space distribution
  */
 function UnifiedWordDisplayComponent({
   tokens,
   centerIndex,
   fontSize,
 }: UnifiedWordDisplayProps) {
+  // Split tokens into three groups
+  const leftTokens = tokens.slice(0, centerIndex);
+  const centerToken = tokens[centerIndex];
+  const rightTokens = tokens.slice(centerIndex + 1);
+
+  // Gap between words in rem (gap-8 = 2rem)
+  const gapRem = 2;
+
+  // Render a single token with styling
+  const renderToken = (token: Token | null | undefined, distanceFromCenter: number) => {
+    if (!token) {
+      return (
+        <span style={{ opacity: 0 }} aria-hidden="true">
+          {"\u00A0"}
+        </span>
+      );
+    }
+
+    const opacity = calculateOpacity(distanceFromCenter);
+    const styling = {
+      fontWeight: token.bold ? 700 : 400,
+      fontStyle: token.italic ? "italic" as const : "normal" as const,
+      fontFamily: token.code
+        ? "var(--font-geist-mono, 'Courier New', monospace)"
+        : "var(--font-reader)",
+      backgroundColor: token.code ? "rgba(255, 255, 255, 0.1)" : "transparent",
+      padding: token.code ? "0.125rem 0.25rem" : "0",
+      borderRadius: token.code ? "0.25rem" : "0",
+    };
+
+    return (
+      <span
+        className="inline-block transition-opacity duration-150"
+        style={{
+          opacity,
+          color: "var(--foreground)",
+          ...styling,
+        }}
+      >
+        {token.text}
+      </span>
+    );
+  };
+
   return (
     <div
       className="fixed inset-0 flex items-center justify-center pointer-events-none z-10"
@@ -69,82 +114,76 @@ function UnifiedWordDisplayComponent({
       aria-label="Reading area"
       aria-live="polite"
     >
-      {/* ORP vertical line indicator - fixed at screen center */}
+      {/* ORP vertical line indicator - fixed at center */}
       <div
-        className="absolute left-1/2 top-0 bottom-0 w-px bg-white/30"
+        className="orp-line"
+        style={{
+          position: "fixed",
+          left: "50%",
+          top: "0",
+          bottom: "0",
+          width: "1px",
+          backgroundColor: "rgba(255, 255, 255, 0.3)",
+          pointerEvents: "none",
+          zIndex: 1,
+        }}
         aria-hidden="true"
       />
 
-      {/* Static container with fixed width - never moves */}
+      {/* Container for all positioned groups */}
       <div
-        className="flex items-center justify-between"
+        className="relative"
         style={{
-          width: "90vw",
           fontSize: `${fontSize}px`,
           lineHeight: "var(--reader-line-height)",
           whiteSpace: "nowrap",
         }}
       >
-        {tokens.map((token, index) => {
-          const distanceFromCenter = index - centerIndex;
-          const opacity = calculateOpacity(distanceFromCenter);
-          const isCenter = index === centerIndex;
+        {/* Left words - positioned to the left of center */}
+        {leftTokens.length > 0 && (
+          <div
+            className="absolute right-1/2 flex gap-8 items-center"
+            style={{
+              top: "50%",
+              transform: `translateX(-${gapRem}rem) translateY(-50%)`,
+            }}
+          >
+            {leftTokens.map((token, idx) => (
+              <div key={idx}>
+                {renderToken(token, idx - centerIndex)}
+              </div>
+            ))}
+          </div>
+        )}
 
-          if (!token) {
-            // Empty slot at document boundaries
-            return (
-              <span
-                key={index}
-                style={{ opacity: 0 }}
-                aria-hidden="true"
-              >
-                {"\u00A0"}
-              </span>
-            );
-          }
+        {/* Center word - absolutely positioned at screen center */}
+        {centerToken && (
+          <div
+            className="absolute left-1/2 top-1/2"
+            style={{
+              transform: "translate(-50%, -50%)",
+            }}
+          >
+            {renderToken(centerToken, 0)}
+          </div>
+        )}
 
-          const orpIndex = token.orp ?? calculateORP(token.text);
-          const textBeforeORP = token.text.slice(0, orpIndex);
-          const orpChar = token.text[orpIndex] || "";
-          const textAfterORP = token.text.slice(orpIndex + 1);
-
-          const styling = {
-            fontWeight: token.bold ? 700 : 400,
-            fontStyle: token.italic ? "italic" as const : "normal" as const,
-            fontFamily: token.code 
-              ? "var(--font-geist-mono, 'Courier New', monospace)" 
-              : "var(--font-reader)",
-            backgroundColor: token.code ? "rgba(255, 255, 255, 0.1)" : "transparent",
-            padding: token.code ? "0.125rem 0.25rem" : "0",
-            borderRadius: token.code ? "0.25rem" : "0",
-          };
-
-          return (
-            <span
-              key={index}
-              className="relative inline-block transition-opacity duration-150"
-              style={{
-                opacity,
-                color: "var(--foreground)",
-                ...styling,
-              }}
-            >
-              {isCenter ? (
-                // Center word: highlight ORP character
-                <>
-                  {textBeforeORP}
-                  <span className="relative">
-                    {orpChar}
-                  </span>
-                  {textAfterORP}
-                </>
-              ) : (
-                // Peripheral words: just show text
-                token.text
-              )}
-            </span>
-          );
-        })}
+        {/* Right words - positioned to the right of center */}
+        {rightTokens.length > 0 && (
+          <div
+            className="absolute left-1/2 flex gap-8 items-center"
+            style={{
+              transform: `translateX(${gapRem}rem) translateY(-50%)`,
+              top: "50%",
+            }}
+          >
+            {rightTokens.map((token, idx) => (
+              <div key={idx}>
+                {renderToken(token, idx + 1)}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
