@@ -1,12 +1,12 @@
 /**
  * UnifiedWordDisplay Component
- * Single unified layout showing all words (peripheral + active) in one flexbox
- * Replaces separate WordLane and PeripheralContext components
+ * Simple, static container that never moves - only text content updates
+ * Eliminates all jitter and movement by using a fixed-position container
  */
 
 "use client";
 
-import { useMemo, useRef, useEffect, memo } from "react";
+import { memo } from "react";
 import type { Token } from "@/app/types";
 
 export interface UnifiedWordDisplayProps {
@@ -42,166 +42,71 @@ function calculateOpacity(distanceFromCenter: number): number {
 }
 
 /**
- * UnifiedWordDisplay - Single flexbox layout with all words
+ * UnifiedWordDisplay - Static fixed container approach
  * 
- * Features:
- * - Single flexbox container spanning 90vw
- * - Fixed-width slots for each word position (eliminates bouncing)
- * - All words (peripheral + active) in one layout
- * - Opacity gradient based on distance from center
- * - ORP line indicator on active word only
- * - Much larger text for comfortable reading
- * - No interference between components
- * - Text centered within each slot, slots never move
+ * Key principles:
+ * 1. Container is FIXED - position: fixed, never moves
+ * 2. Container size is CONSTANT - w-[90vw], doesn't change
+ * 3. Only TEXT CONTENT changes - not DOM structure, not layout
+ * 4. Use justify-around - works because container width is fixed
+ * 5. No calculations, no slots, no transforms - just simple static layout
+ * 
+ * Why this works:
+ * - Container is fixed in viewport → never moves
+ * - Container width is constant → spacing calculations don't change
+ * - Only textContent updates → no layout recalculation needed
+ * - Simple flexbox → browser handles spacing efficiently
  */
 function UnifiedWordDisplayComponent({
   tokens,
   centerIndex,
   fontSize,
 }: UnifiedWordDisplayProps) {
-  const wordRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  // Calculate word data with opacity and ORP
-  const wordData = useMemo(() => {
-    return tokens.map((token, index) => {
-      const distanceFromCenter = index - centerIndex;
-      const opacity = calculateOpacity(distanceFromCenter);
-      const isCenter = index === centerIndex;
-      const orpIndex = token?.orp ?? (token ? calculateORP(token.text) : 0);
-
-      return {
-        token,
-        opacity,
-        isCenter,
-        orpIndex,
-        distanceFromCenter,
-      };
-    });
-  }, [tokens, centerIndex]);
-
-  // Calculate and apply transform to align center word's ORP to screen center
-  useEffect(() => {
-    if (!containerRef.current) return;
-
-    const centerWordRef = wordRefs.current[centerIndex];
-    if (!centerWordRef) return;
-
-    const centerToken = tokens[centerIndex];
-    if (!centerToken) return;
-
-    // Create a temporary canvas to measure character widths precisely
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    // Set font to match the word element
-    const computedStyle = window.getComputedStyle(centerWordRef);
-    ctx.font = `${computedStyle.fontStyle} ${computedStyle.fontWeight} ${computedStyle.fontSize} ${computedStyle.fontFamily}`;
-
-    // Measure width up to ORP character
-    const orpIndex = centerToken.orp ?? calculateORP(centerToken.text);
-    const textBeforeORP = centerToken.text.slice(0, orpIndex);
-    const widthBeforeORP = ctx.measureText(textBeforeORP).width;
-    
-    // Measure width of ORP character itself (to get its center)
-    const orpChar = centerToken.text[orpIndex] || "";
-    const orpCharWidth = ctx.measureText(orpChar).width;
-    
-    // Calculate offset: distance from word start to ORP character center
-    const orpOffset = widthBeforeORP + (orpCharWidth / 2);
-
-    // Get the center word's position relative to container
-    const containerRect = containerRef.current.getBoundingClientRect();
-    const wordRect = centerWordRef.getBoundingClientRect();
-    const wordLeftRelativeToContainer = wordRect.left - containerRect.left;
-
-    // Calculate how much to shift the entire container
-    // We want: wordLeftRelativeToContainer + orpOffset = containerWidth / 2
-    const containerCenter = containerRect.width / 2;
-    const screenCenter = window.innerWidth / 2;
-    
-    // Calculate the shift needed
-    const shiftNeeded = screenCenter - (wordRect.left + orpOffset);
-    
-    // Apply transform to container
-    containerRef.current.style.transform = `translateX(${shiftNeeded}px)`;
-  }, [tokens, centerIndex, fontSize]);
-
-  // Calculate fixed slot width based on number of tokens
-  const slotWidth = tokens.length > 0 ? `${90 / tokens.length}vw` : "18vw";
-
   return (
     <div
-      className="unified-word-display-wrapper"
+      className="fixed inset-0 flex items-center justify-center pointer-events-none z-10"
       role="main"
       aria-label="Reading area"
       aria-live="polite"
-      style={{
-        position: "relative",
-        width: "100%",
-        height: "100%",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        overflow: "hidden",
-      }}
     >
       {/* ORP vertical line indicator - fixed at screen center */}
       <div
-        className="orp-line"
-        style={{
-          position: "fixed",
-          left: "50%",
-          top: "0",
-          bottom: "0",
-          width: "1px",
-          backgroundColor: "rgba(255, 255, 255, 0.3)",
-          pointerEvents: "none",
-          zIndex: 10,
-        }}
+        className="absolute left-1/2 top-0 bottom-0 w-px bg-white/30"
         aria-hidden="true"
       />
 
-      {/* Unified word container */}
+      {/* Static container with fixed width - never moves */}
       <div
-        ref={containerRef}
-        className="unified-word-display"
+        className="flex items-center justify-around"
         style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
+          width: "90vw",
           fontSize: `${fontSize}px`,
           lineHeight: "var(--reader-line-height)",
           whiteSpace: "nowrap",
-          width: "90vw",
-          transition: "transform 0.15s ease-out",
         }}
       >
-        {wordData.map((data, index) => {
-          const { token, opacity, isCenter } = data;
-          
+        {tokens.map((token, index) => {
+          const distanceFromCenter = index - centerIndex;
+          const opacity = calculateOpacity(distanceFromCenter);
+          const isCenter = index === centerIndex;
+
           if (!token) {
-            // Empty slot at document boundaries - fixed width slot
+            // Empty slot at document boundaries
             return (
-              <div
+              <span
                 key={index}
-                ref={(el) => {
-                  wordRefs.current[index] = el;
-                }}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: slotWidth,
-                  minWidth: "150px",
-                  opacity: 0,
-                }}
+                style={{ opacity: 0 }}
+                aria-hidden="true"
               >
                 {"\u00A0"}
-              </div>
+              </span>
             );
           }
+
+          const orpIndex = token.orp ?? calculateORP(token.text);
+          const textBeforeORP = token.text.slice(0, orpIndex);
+          const orpChar = token.text[orpIndex] || "";
+          const textAfterORP = token.text.slice(orpIndex + 1);
 
           const styling = {
             fontWeight: token.bold ? 700 : 400,
@@ -215,37 +120,29 @@ function UnifiedWordDisplayComponent({
           };
 
           return (
-            <div
+            <span
               key={index}
-              ref={(el) => {
-                wordRefs.current[index] = el;
-              }}
-              className="reader-text unified-word-slot"
-              data-center={isCenter}
-              data-distance={data.distanceFromCenter}
+              className="relative inline-block transition-opacity duration-150"
               style={{
-                position: "relative",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: slotWidth,
-                minWidth: "150px",
                 opacity,
-                transition: "opacity 0.15s ease-out",
-                zIndex: isCenter ? 5 : 1,
+                color: "var(--foreground)",
+                ...styling,
               }}
             >
-              <span
-                className="unified-word-content"
-                style={{
-                  display: "inline-block",
-                  color: "var(--foreground)",
-                  ...styling,
-                }}
-              >
-                {token.text}
-              </span>
-            </div>
+              {isCenter ? (
+                // Center word: highlight ORP character
+                <>
+                  {textBeforeORP}
+                  <span className="relative">
+                    {orpChar}
+                  </span>
+                  {textAfterORP}
+                </>
+              ) : (
+                // Peripheral words: just show text
+                token.text
+              )}
+            </span>
           );
         })}
       </div>
@@ -254,8 +151,8 @@ function UnifiedWordDisplayComponent({
 }
 
 // Export memoized component to prevent unnecessary re-renders
+// Simplified comparison - only re-render when props actually change
 export const UnifiedWordDisplay = memo(UnifiedWordDisplayComponent, (prevProps, nextProps) => {
-  // Only re-render if tokens array content changes or fontSize/centerIndex changes
   if (
     prevProps.fontSize !== nextProps.fontSize ||
     prevProps.centerIndex !== nextProps.centerIndex ||
