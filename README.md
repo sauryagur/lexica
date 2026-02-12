@@ -1,6 +1,213 @@
 # Lexica
 
-**Product Design Document (PDD) + System Design Document (SDD)**
+A web-based cognitive reading interface that presents text through a center-pinned, token-driven sliding window. Lexica is a focus scaffolding system designed for readers with ADHD, students reading dense material, and knowledge workers seeking high-retention reading.
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Node.js 18+ and npm
+
+### Installation
+
+```bash
+# Clone the repository
+git clone <repository-url>
+cd lexica
+
+# Install dependencies
+npm install
+
+# Run development server
+npm run dev
+
+# Open http://localhost:3000
+```
+
+### Build for Production
+
+```bash
+npm run build
+npm start
+```
+
+### Testing
+
+```bash
+# Run all tests
+npm test
+
+# Run tests in watch mode
+npm test -- --watch
+
+# Run tests with coverage
+npm test -- --coverage
+```
+
+## 📖 Usage
+
+1. **Upload a document**: Press ESC to open settings panel, then upload a Markdown file
+2. **Start reading**: Press Spacebar or Right Arrow to advance word by word
+3. **Navigate**: 
+   - Spacebar/Right Arrow: Next word
+   - Left Arrow: Previous word
+   - ESC: Show/hide settings
+   - Mouse movement: Show UI chrome
+4. **Adjust settings**: Font size, window radius (peripheral context), theme
+5. **Scrub through document**: Use the progress bar at bottom (appears on mouse movement)
+
+## ⌨️ Keyboard Shortcuts
+
+| Key | Action |
+|-----|--------|
+| `Space` | Advance to next word |
+| `→` | Advance to next word |
+| `←` | Go to previous word |
+| `Esc` | Toggle settings panel |
+| Mouse movement | Show UI chrome |
+
+## 🏗️ Architecture
+
+```
+Upload
+  ↓
+Markdown Parser (unified + remark)
+  ↓
+AST (mdast)
+  ↓
+Sanitization Layer (strip formatting, preserve semantics)
+  ↓
+Content Stream Builder
+  ↓
+Token Pages (4096 tokens/page) + Anchors
+  ↓
+Reader Engine (React Context)
+  ↓
+Renderer (WordLane + PeripheralContext)
+```
+
+### Key Components
+
+- **ReaderContext**: Global state management for reader
+- **ReaderEngine**: Main orchestrator for reading interface
+- **WordLane**: Center-pinned word display with ORP alignment
+- **PeripheralContext**: Surrounding words with gradient opacity
+- **Token Pages**: Paged storage for efficient large document handling
+- **Anchors**: Fast lookup for headings, images, and paragraphs
+
+### Performance Characteristics
+
+- **Navigation latency**: <2ms (keypress to render)
+- **Token lookup**: O(1) via paged structure
+- **Memory**: ~1KB per 1000 words
+- **Rendering**: Fixed DOM, only textContent updates
+
+## 📁 Project Structure
+
+```
+lexica/
+├── app/
+│   ├── components/
+│   │   ├── reader/          # Core reading components
+│   │   │   ├── ReaderEngine.tsx
+│   │   │   ├── WordLane.tsx
+│   │   │   ├── PeripheralContext.tsx
+│   │   │   └── ImageDisplay.tsx
+│   │   └── ui/              # UI chrome components
+│   │       ├── Breadcrumb.tsx
+│   │       ├── ProgressIndicator.tsx
+│   │       ├── SettingsPanel.tsx
+│   │       ├── ScrubBar.tsx
+│   │       └── FileUpload.tsx
+│   ├── context/             # React Context
+│   │   └── ReaderContext.tsx
+│   ├── hooks/               # Custom hooks
+│   │   ├── useKeyboardNav.ts
+│   │   ├── useMouseInteraction.ts
+│   │   └── useReaderPersistence.ts
+│   ├── lib/
+│   │   ├── engine/          # Core reading engine
+│   │   │   ├── reader-state.ts
+│   │   │   ├── content-stream.ts
+│   │   │   ├── token-pages.ts
+│   │   │   └── anchors.ts
+│   │   ├── parser/          # Markdown processing
+│   │   │   ├── markdown-parser.ts
+│   │   │   ├── sanitizer.ts
+│   │   │   └── tokenizer.ts
+│   │   └── storage/         # Persistence
+│   │       └── idb-store.ts
+│   └── types/               # TypeScript types
+├── __tests__/               # Test suite (412 tests)
+├── docs/                    # Documentation
+└── public/                  # Static assets
+```
+
+## 🎨 Design Principles
+
+1. **Single visual focal point**: No eye scanning
+2. **No scrolling during reading**: Stable interface
+3. **Keyboard-first interaction**: Minimal UI, maximum focus
+4. **Minimal persistent UI**: Chrome only on demand
+5. **Predictable behavior**: Deterministic, manual pacing
+
+## 🧪 Testing
+
+Current test coverage: **406/412 tests passing** (98.5%)
+
+```bash
+# Run tests
+npm test
+
+# Run specific test file
+npm test -- WordLane.test.tsx
+
+# Run tests with UI
+npm test -- --ui
+```
+
+## 📊 Performance Monitoring
+
+Performance metrics are logged to console during navigation:
+- If navigation takes >2ms, a warning is displayed
+- Use browser DevTools Performance tab to profile
+
+## ♿ Accessibility
+
+- Full keyboard navigation
+- ARIA labels for screen readers
+- Adjustable font size (12-32px)
+- High contrast support
+- Respects `prefers-reduced-motion`
+- Focus trap in settings panel
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'feat: add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+### Commit Convention
+
+We follow conventional commits:
+- `feat:` New feature
+- `fix:` Bug fix
+- `perf:` Performance improvement
+- `docs:` Documentation
+- `style:` Formatting, no code change
+- `refactor:` Code restructure
+- `test:` Tests
+- `chore:` Maintenance
+
+## 📝 License
+
+[Add your license here]
+
+---
+
+# Product Design Document (PDD) + System Design Document (SDD)
 
 ---
 
