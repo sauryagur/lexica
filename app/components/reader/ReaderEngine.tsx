@@ -8,9 +8,14 @@
 import { useState, useCallback, useMemo } from "react";
 import { useReader } from "@/app/context/ReaderContext";
 import { useKeyboardNav } from "@/app/hooks/useKeyboardNav";
+import { useMouseInteraction } from "@/app/hooks/useMouseInteraction";
 import { WordLane } from "./WordLane";
 import { PeripheralContext } from "./PeripheralContext";
 import { ImageDisplay } from "./ImageDisplay";
+import { Breadcrumb } from "../ui/Breadcrumb";
+import { ProgressIndicator } from "../ui/ProgressIndicator";
+import { SettingsPanel } from "../ui/SettingsPanel";
+import { ScrubBar } from "../ui/ScrubBar";
 import { getCurrentImageNode } from "@/app/lib/engine/reader-state";
 import type { ImageNode } from "@/app/types";
 
@@ -20,7 +25,8 @@ import type { ImageNode } from "@/app/types";
  * Features:
  * - Composes WordLane + PeripheralContext OR ImageDisplay
  * - Handles keyboard navigation
- * - UI visibility toggle (ESC)
+ * - UI visibility toggle (ESC + mouse movement)
+ * - Chrome UI: Breadcrumb, Progress, Settings, ScrubBar
  * - Pure black background
  * - Minimal UI during reading
  * - Performance optimized: <2ms render on token advance
@@ -35,23 +41,69 @@ export function ReaderEngine() {
     isOnImage,
     settings,
     currentIndex,
+    progress,
+    breadcrumb,
     advance,
     retreat,
+    jumpToPercentage,
   } = useReader();
 
-  // UI visibility state (toggled by ESC)
-  const [uiVisible, setUIVisible] = useState(false);
+  // UI visibility state
+  const [chromeVisible, setChromeVisible] = useState(false);
+  const [settingsPanelVisible, setSettingsPanelVisible] = useState(false);
 
-  // Toggle UI visibility
-  const toggleUI = useCallback(() => {
-    setUIVisible((prev) => !prev);
+  // Show chrome UI (triggered by mouse or ESC)
+  const showChrome = useCallback(() => {
+    setChromeVisible(true);
   }, []);
+
+  // Hide chrome UI (triggered by idle timeout)
+  const hideChrome = useCallback(() => {
+    setChromeVisible(false);
+  }, []);
+
+  // Toggle settings panel (ESC key)
+  const toggleSettingsPanel = useCallback(() => {
+    setSettingsPanelVisible((prev) => !prev);
+    
+    // Also show chrome when toggling settings
+    if (!settingsPanelVisible) {
+      showChrome();
+    }
+  }, [settingsPanelVisible, showChrome]);
+
+  // Hide settings panel when reading resumes (spacebar/arrows)
+  const handleAdvance = useCallback(() => {
+    setSettingsPanelVisible(false);
+    advance();
+  }, [advance]);
+
+  const handleRetreat = useCallback(() => {
+    setSettingsPanelVisible(false);
+    retreat();
+  }, [retreat]);
+
+  // Handle scrub bar seek
+  const handleSeek = useCallback(
+    (percentage: number) => {
+      jumpToPercentage(percentage);
+    },
+    [jumpToPercentage]
+  );
+
+  // Mouse interaction hook - show chrome on movement, hide after idle
+  useMouseInteraction({
+    onInteraction: showChrome,
+    onIdle: hideChrome,
+    idleTimeout: 3000,
+    enabled: pages !== null && anchors !== null,
+  });
 
   // Keyboard navigation handlers
   useKeyboardNav({
-    onAdvance: advance,
-    onRetreat: retreat,
-    onToggleUI: toggleUI,
+    onAdvance: handleAdvance,
+    onRetreat: handleRetreat,
+    onToggleUI: toggleSettingsPanel,
     enabled: pages !== null && anchors !== null,
   });
 
@@ -187,30 +239,14 @@ export function ReaderEngine() {
         )}
       </div>
 
-      {/* UI Chrome (hidden by default, shown on ESC or mouse move) */}
-      {uiVisible && (
-        <div
-          className="ui-chrome"
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            padding: "1rem",
-            background: "var(--ui-background)",
-            borderBottom: "1px solid var(--ui-border)",
-            color: "var(--foreground)",
-            fontFamily: "var(--font-ui)",
-            opacity: "var(--ui-opacity)",
-            transition: "opacity 0.2s ease-in-out",
-            zIndex: 100,
-          }}
-        >
-          <div style={{ fontSize: "0.875rem", opacity: 0.7 }}>
-            Press ESC to hide UI • Space/→ to advance • ← to retreat
-          </div>
-        </div>
-      )}
+      {/* Chrome UI Components */}
+      <Breadcrumb path={breadcrumb} visible={chromeVisible} />
+      <ProgressIndicator progress={progress} visible={chromeVisible} />
+      <SettingsPanel
+        visible={settingsPanelVisible}
+        onClose={() => setSettingsPanelVisible(false)}
+      />
+      <ScrubBar progress={progress} visible={chromeVisible} onSeek={handleSeek} />
     </div>
   );
 }
