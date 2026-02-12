@@ -1,16 +1,6 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Merriweather } from "next/font/google";
+import { Merriweather } from "next/font/google";
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 const merriweather = Merriweather({
   weight: ["300", "400", "700"],
@@ -20,8 +10,8 @@ const merriweather = Merriweather({
 });
 
 export const metadata: Metadata = {
-  title: "Lexica - Focus Reading Interface",
-  description: "A cognitive reading interface with center-pinned, token-driven navigation",
+  title: "Lexica",
+  description: "Focus-scaffolding reading interface",
 };
 
 export default function RootLayout({
@@ -31,9 +21,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} ${merriweather.variable} antialiased`}
-      >
+      <body className={`${merriweather.variable} antialiased`}>
         {children}
       </body>
     </html>
