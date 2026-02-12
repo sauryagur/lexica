@@ -1,13 +1,14 @@
 /**
  * SettingsPanel Component
  * Bottom-left settings panel with theme, font size, window radius, and file upload
+ * Includes accessibility features: focus trap, ESC to close, ARIA labels
  */
 
 "use client";
 
 import { useReader } from "@/app/context/ReaderContext";
 import { FileUpload } from "./FileUpload";
-import type { ChangeEvent } from "react";
+import { useEffect, useRef, type ChangeEvent } from "react";
 
 interface SettingsPanelProps {
   visible: boolean;
@@ -30,6 +31,32 @@ interface SettingsPanelProps {
  */
 export function SettingsPanel({ visible, onClose }: SettingsPanelProps) {
   const { settings, updateSettings, loadDocument } = useReader();
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  // Focus trap: focus first element when panel opens
+  useEffect(() => {
+    if (visible && panelRef.current) {
+      const firstFocusable = panelRef.current.querySelector<HTMLElement>(
+        'input, button, [tabindex]:not([tabindex="-1"])'
+      );
+      firstFocusable?.focus();
+    }
+  }, [visible]);
+
+  // ESC key to close
+  useEffect(() => {
+    if (!visible) return;
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose?.();
+      }
+    };
+
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [visible, onClose]);
 
   // Handle theme change
   const handleThemeChange = (theme: "light" | "dark") => {
@@ -65,7 +92,11 @@ export function SettingsPanel({ visible, onClose }: SettingsPanelProps) {
 
   return (
     <div
+      ref={panelRef}
       className="settings-panel"
+      role="dialog"
+      aria-label="Reader settings"
+      aria-hidden={!visible}
       style={{
         position: "absolute",
         bottom: "1rem",
@@ -118,6 +149,7 @@ export function SettingsPanel({ visible, onClose }: SettingsPanelProps) {
               value="dark"
               checked={settings.theme === "dark"}
               onChange={() => handleThemeChange("dark")}
+              aria-label="Dark theme"
               style={{ cursor: "pointer" }}
             />
             <span>Dark</span>
@@ -136,6 +168,7 @@ export function SettingsPanel({ visible, onClose }: SettingsPanelProps) {
               value="light"
               checked={settings.theme === "light"}
               onChange={() => handleThemeChange("light")}
+              aria-label="Light theme"
               style={{ cursor: "pointer" }}
             />
             <span>Light</span>
@@ -169,6 +202,10 @@ export function SettingsPanel({ visible, onClose }: SettingsPanelProps) {
           step="1"
           value={settings.fontSize}
           onChange={handleFontSizeChange}
+          aria-label={`Font size: ${settings.fontSize} pixels`}
+          aria-valuemin={12}
+          aria-valuemax={32}
+          aria-valuenow={settings.fontSize}
           style={{
             width: "100%",
             cursor: "pointer",
@@ -202,6 +239,10 @@ export function SettingsPanel({ visible, onClose }: SettingsPanelProps) {
           step="1"
           value={settings.windowRadius}
           onChange={handleWindowRadiusChange}
+          aria-label={`Window radius: ${settings.windowRadius} words`}
+          aria-valuemin={1}
+          aria-valuemax={3}
+          aria-valuenow={settings.windowRadius}
           style={{
             width: "100%",
             cursor: "pointer",

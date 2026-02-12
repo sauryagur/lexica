@@ -91,10 +91,33 @@ export function ScrubBar({ progress, visible, onSeek }: ScrubBarProps) {
     <div
       ref={barRef}
       className="scrub-bar"
+      role="slider"
+      aria-label="Document progress"
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={Math.round(progress)}
+      aria-valuetext={`${Math.round(progress)}% complete`}
+      tabIndex={0}
       onClick={handleClick}
       onMouseDown={handleMouseDown}
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
+      onKeyDown={(e) => {
+        // Keyboard navigation: Arrow keys to seek
+        if (e.key === "ArrowRight") {
+          e.preventDefault();
+          onSeek(Math.min(100, progress + 5));
+        } else if (e.key === "ArrowLeft") {
+          e.preventDefault();
+          onSeek(Math.max(0, progress - 5));
+        } else if (e.key === "Home") {
+          e.preventDefault();
+          onSeek(0);
+        } else if (e.key === "End") {
+          e.preventDefault();
+          onSeek(100);
+        }
+      }}
       style={{
         position: "absolute",
         bottom: 0,
