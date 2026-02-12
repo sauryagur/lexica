@@ -123,8 +123,8 @@ describe("SettingsPanel", () => {
   it("displays current font size value", () => {
     renderWithContext(<SettingsPanel visible={true} />);
     
-    // Default font size is 18px
-    expect(screen.getByText(/18px/i)).toBeInTheDocument();
+    // Default font size is 56px
+    expect(screen.getByText(/56px/i)).toBeInTheDocument();
   });
 
   it("displays current window radius value", () => {

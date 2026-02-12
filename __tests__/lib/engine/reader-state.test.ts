@@ -35,7 +35,7 @@ describe("Reader State Manager", () => {
 
       expect(state.currentIndex).toBe(0);
       expect(state.settings.theme).toBe("dark");
-      expect(state.settings.fontSize).toBe(18);
+      expect(state.settings.fontSize).toBe(56);
       expect(state.settings.windowRadius).toBe(2);
       expect(state.settings.skipImages).toBe(false);
     });

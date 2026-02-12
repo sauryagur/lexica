@@ -197,14 +197,14 @@ export function SettingsPanel({ visible, onClose }: SettingsPanelProps) {
         <input
           id="font-size-slider"
           type="range"
-          min="12"
-          max="32"
+          min="32"
+          max="96"
           step="1"
           value={settings.fontSize}
           onChange={handleFontSizeChange}
           aria-label={`Font size: ${settings.fontSize} pixels`}
-          aria-valuemin={12}
-          aria-valuemax={32}
+          aria-valuemin={32}
+          aria-valuemax={96}
           aria-valuenow={settings.fontSize}
           style={{
             width: "100%",
