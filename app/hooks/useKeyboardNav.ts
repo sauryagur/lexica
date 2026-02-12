@@ -1,6 +1,7 @@
 /**
  * useKeyboardNav Hook
  * Handles keyboard navigation for the reader
+ * Includes performance monitoring for <2ms target
  */
 
 "use client";
@@ -53,12 +54,40 @@ export function useKeyboardNav({
       switch (event.key) {
         case " ": // Spacebar
           event.preventDefault();
+          // Performance monitoring
+          performance.mark("nav-start");
           onAdvance();
+          performance.mark("nav-end");
+          performance.measure("navigation", "nav-start", "nav-end");
+          
+          // Check performance and warn if >2ms
+          const measure = performance.getEntriesByName("navigation")[0] as PerformanceMeasure;
+          if (measure && measure.duration > 2) {
+            console.warn(`⚠️ Navigation latency: ${measure.duration.toFixed(2)}ms (target: <2ms)`);
+          }
+          
+          // Cleanup marks and measures
+          performance.clearMarks("nav-start");
+          performance.clearMarks("nav-end");
+          performance.clearMeasures("navigation");
           break;
 
         case "ArrowRight":
           event.preventDefault();
+          // Performance monitoring
+          performance.mark("nav-start");
           onAdvance();
+          performance.mark("nav-end");
+          performance.measure("navigation", "nav-start", "nav-end");
+          
+          const measureRight = performance.getEntriesByName("navigation")[0] as PerformanceMeasure;
+          if (measureRight && measureRight.duration > 2) {
+            console.warn(`⚠️ Navigation latency: ${measureRight.duration.toFixed(2)}ms (target: <2ms)`);
+          }
+          
+          performance.clearMarks("nav-start");
+          performance.clearMarks("nav-end");
+          performance.clearMeasures("navigation");
           break;
 
         case "ArrowLeft":

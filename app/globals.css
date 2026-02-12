@@ -79,3 +79,28 @@ body {
   outline: 2px solid var(--foreground);
   outline-offset: 2px;
 }
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Hardware acceleration for performance-critical elements */
+.reader-text,
+.peripheral-token,
+.word-lane,
+.peripheral-context,
+.orp-line,
+.breadcrumb,
+.progress-indicator,
+.settings-panel,
+.scrub-bar {
+  will-change: auto;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}

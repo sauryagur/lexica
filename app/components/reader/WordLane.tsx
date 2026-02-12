@@ -1,11 +1,12 @@
 /**
  * WordLane Component
  * Center-pinned word display with ORP (Optimal Recognition Point) indicator
+ * Performance: Memoized to prevent unnecessary re-renders
  */
 
 "use client";
 
-import { useMemo, useRef, useEffect } from "react";
+import { useMemo, useRef, useEffect, memo } from "react";
 import type { Token } from "@/app/types";
 
 export interface WordLaneProps {
@@ -30,8 +31,9 @@ function calculateORP(word: string): number {
  * - Token styling (bold, italic, code)
  * - Fixed DOM structure for performance
  * - Smooth updates without flicker
+ * - Memoized to prevent re-renders when token hasn't changed
  */
-export function WordLane({ token, fontSize }: WordLaneProps) {
+function WordLaneComponent({ token, fontSize }: WordLaneProps) {
   const wordRef = useRef<HTMLSpanElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -96,6 +98,9 @@ export function WordLane({ token, fontSize }: WordLaneProps) {
     <div
       ref={containerRef}
       className="word-lane"
+      role="main"
+      aria-label="Reading area"
+      aria-live="polite"
       style={{
         position: "relative",
         display: "flex",
@@ -116,7 +121,7 @@ export function WordLane({ token, fontSize }: WordLaneProps) {
           top: "0",
           bottom: "0",
           width: "1px",
-          backgroundColor: "rgba(255, 255, 255, 0.2)",
+          backgroundColor: "rgba(255, 255, 255, 0.3)",
           pointerEvents: "none",
           zIndex: 1,
         }}
@@ -144,3 +149,17 @@ export function WordLane({ token, fontSize }: WordLaneProps) {
     </div>
   );
 }
+
+// Export memoized component to prevent unnecessary re-renders
+export const WordLane = memo(WordLaneComponent, (prevProps, nextProps) => {
+  // Only re-render if token text/styling changes or fontSize changes
+  return (
+    prevProps.fontSize === nextProps.fontSize &&
+    prevProps.token?.text === nextProps.token?.text &&
+    prevProps.token?.bold === nextProps.token?.bold &&
+    prevProps.token?.italic === nextProps.token?.italic &&
+    prevProps.token?.code === nextProps.token?.code
+  );
+});
+
+WordLane.displayName = "WordLane";

@@ -1,11 +1,12 @@
 /**
  * PeripheralContext Component
  * Displays tokens around the center word with gradient opacity
+ * Performance: Memoized to prevent unnecessary re-renders
  */
 
 "use client";
 
-import { useMemo, useRef, useEffect } from "react";
+import { useMemo, useRef, useEffect, memo } from "react";
 import type { Token } from "@/app/types";
 
 export interface PeripheralContextProps {
@@ -38,8 +39,9 @@ function calculateOpacity(distanceFromCenter: number): number {
  * - Only updates textContent, not DOM nodes
  * - Handles empty slots at document boundaries
  * - Matches WordLane typography
+ * - Memoized for performance
  */
-export function PeripheralContext({
+function PeripheralContextComponent({
   tokens,
   centerIndex,
   fontSize,
@@ -155,3 +157,33 @@ export function PeripheralContext({
     </div>
   );
 }
+
+// Export memoized component to prevent unnecessary re-renders
+export const PeripheralContext = memo(PeripheralContextComponent, (prevProps, nextProps) => {
+  // Only re-render if tokens array content changes or fontSize/centerIndex changes
+  if (
+    prevProps.fontSize !== nextProps.fontSize ||
+    prevProps.centerIndex !== nextProps.centerIndex ||
+    prevProps.tokens.length !== nextProps.tokens.length
+  ) {
+    return false;
+  }
+  
+  // Check if actual token content changed
+  for (let i = 0; i < prevProps.tokens.length; i++) {
+    const prev = prevProps.tokens[i];
+    const next = nextProps.tokens[i];
+    if (
+      prev?.text !== next?.text ||
+      prev?.bold !== next?.bold ||
+      prev?.italic !== next?.italic ||
+      prev?.code !== next?.code
+    ) {
+      return false;
+    }
+  }
+  
+  return true;
+});
+
+PeripheralContext.displayName = "PeripheralContext";

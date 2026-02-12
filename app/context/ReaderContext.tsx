@@ -116,26 +116,27 @@ export function ReaderProvider({
     };
   }, [pages, anchors, currentIndex, settings]);
 
-  // Computed values (memoized)
+  // Computed values (memoized) - Optimized for <2ms render
+  // Performance: Only depend on specific values, not entire readerState
   const currentToken = useMemo<Token | null>(() => {
-    if (!readerState) return null;
-    return getCurrentToken(readerState);
-  }, [readerState]);
+    if (!pages) return null;
+    return getCurrentToken({ pages, anchors: anchors!, currentIndex, settings });
+  }, [pages, anchors, currentIndex, settings]);
 
   const peripheralWindow = useMemo<Token[]>(() => {
-    if (!readerState) return [];
-    return getPeripheralWindow(readerState);
-  }, [readerState]);
+    if (!pages) return [];
+    return getPeripheralWindow({ pages, anchors: anchors!, currentIndex, settings });
+  }, [pages, currentIndex, settings.windowRadius]);
 
   const isOnImage = useMemo<boolean>(() => {
-    if (!readerState) return false;
-    return isAtImageNode(readerState);
-  }, [readerState]);
+    if (!pages || !anchors) return false;
+    return isAtImageNode({ pages, anchors, currentIndex, settings });
+  }, [anchors, currentIndex]);
 
   const progress = useMemo<number>(() => {
-    if (!readerState) return 0;
-    return getProgress(readerState);
-  }, [readerState]);
+    if (!pages) return 0;
+    return getProgress({ pages, anchors: anchors!, currentIndex, settings });
+  }, [pages, currentIndex]);
 
   const breadcrumb = useMemo<string[]>(() => {
     if (!anchors) return [];
