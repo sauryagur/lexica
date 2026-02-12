@@ -9,8 +9,7 @@ import { useState, useCallback, useMemo } from "react";
 import { useReader } from "@/app/context/ReaderContext";
 import { useKeyboardNav } from "@/app/hooks/useKeyboardNav";
 import { useMouseInteraction } from "@/app/hooks/useMouseInteraction";
-import { WordLane } from "./WordLane";
-import { PeripheralContext } from "./PeripheralContext";
+import { UnifiedWordDisplay } from "./UnifiedWordDisplay";
 import { ImageDisplay } from "./ImageDisplay";
 import { Breadcrumb } from "../ui/Breadcrumb";
 import { ProgressIndicator } from "../ui/ProgressIndicator";
@@ -23,7 +22,7 @@ import type { ImageNode } from "@/app/types";
  * ReaderEngine - Main reading interface orchestrator
  * 
  * Features:
- * - Composes WordLane + PeripheralContext OR ImageDisplay
+ * - Composes UnifiedWordDisplay OR ImageDisplay
  * - Handles keyboard navigation
  * - UI visibility toggle (ESC + mouse movement)
  * - Chrome UI: Breadcrumb, Progress, Settings, ScrubBar
@@ -227,15 +226,12 @@ export function ReaderEngine() {
           // Image mode: show centered image
           <ImageDisplay image={currentImage} />
         ) : (
-          // Text mode: show peripheral context + word lane
-          <>
-            <PeripheralContext
-              tokens={peripheralWindow}
-              centerIndex={centerIndex}
-              fontSize={settings.fontSize}
-            />
-            <WordLane token={currentToken} fontSize={settings.fontSize} />
-          </>
+          // Text mode: show unified word display
+          <UnifiedWordDisplay
+            tokens={peripheralWindow}
+            centerIndex={centerIndex}
+            fontSize={settings.fontSize}
+          />
         )}
       </div>
 
