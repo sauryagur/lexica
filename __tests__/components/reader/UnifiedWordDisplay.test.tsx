@@ -55,14 +55,14 @@ describe("UnifiedWordDisplay", () => {
       />
     );
 
-    const words = container.querySelectorAll(".unified-word");
+    const slots = container.querySelectorAll(".unified-word-slot");
     
-    // Check opacity values
-    expect(words[0]).toHaveStyle({ opacity: 0.20 }); // distance = 2
-    expect(words[1]).toHaveStyle({ opacity: 0.45 }); // distance = 1
-    expect(words[2]).toHaveStyle({ opacity: 1.0 });  // distance = 0 (center)
-    expect(words[3]).toHaveStyle({ opacity: 0.45 }); // distance = 1
-    expect(words[4]).toHaveStyle({ opacity: 0.20 }); // distance = 2
+    // Check opacity values on slots
+    expect(slots[0]).toHaveStyle({ opacity: 0.20 }); // distance = 2
+    expect(slots[1]).toHaveStyle({ opacity: 0.45 }); // distance = 1
+    expect(slots[2]).toHaveStyle({ opacity: 1.0 });  // distance = 0 (center)
+    expect(slots[3]).toHaveStyle({ opacity: 0.45 }); // distance = 1
+    expect(slots[4]).toHaveStyle({ opacity: 0.20 }); // distance = 2
   });
 
   it("marks center word with data-center attribute", () => {
@@ -80,10 +80,10 @@ describe("UnifiedWordDisplay", () => {
       />
     );
 
-    const words = container.querySelectorAll(".unified-word");
-    expect(words[0]).toHaveAttribute("data-center", "false");
-    expect(words[1]).toHaveAttribute("data-center", "true");
-    expect(words[2]).toHaveAttribute("data-center", "false");
+    const slots = container.querySelectorAll(".unified-word-slot");
+    expect(slots[0]).toHaveAttribute("data-center", "false");
+    expect(slots[1]).toHaveAttribute("data-center", "true");
+    expect(slots[2]).toHaveAttribute("data-center", "false");
   });
 
   it("displays ORP line indicator", () => {
@@ -209,7 +209,7 @@ describe("UnifiedWordDisplay", () => {
     const displayStyle = window.getComputedStyle(display!);
     expect(displayStyle.display).toBe("flex");
     expect(displayStyle.alignItems).toBe("center");
-    expect(displayStyle.justifyContent).toBe("space-around");
+    expect(displayStyle.justifyContent).toBe("center");
   });
 
   it("uses correct windowRadius with centerIndex", () => {
@@ -230,15 +230,15 @@ describe("UnifiedWordDisplay", () => {
       />
     );
 
-    const words = container.querySelectorAll(".unified-word");
-    expect(words.length).toBe(5);
+    const slots = container.querySelectorAll(".unified-word-slot");
+    expect(slots.length).toBe(5);
     
     // Verify distance attributes
-    expect(words[0]).toHaveAttribute("data-distance", "-2");
-    expect(words[1]).toHaveAttribute("data-distance", "-1");
-    expect(words[2]).toHaveAttribute("data-distance", "0");
-    expect(words[3]).toHaveAttribute("data-distance", "1");
-    expect(words[4]).toHaveAttribute("data-distance", "2");
+    expect(slots[0]).toHaveAttribute("data-distance", "-2");
+    expect(slots[1]).toHaveAttribute("data-distance", "-1");
+    expect(slots[2]).toHaveAttribute("data-distance", "0");
+    expect(slots[3]).toHaveAttribute("data-distance", "1");
+    expect(slots[4]).toHaveAttribute("data-distance", "2");
   });
 
   it("memoizes correctly and doesn't re-render unnecessarily", () => {
@@ -274,7 +274,7 @@ describe("UnifiedWordDisplay", () => {
       createToken("ONLY"),
     ];
 
-    render(
+    const { container } = render(
       <UnifiedWordDisplay
         tokens={tokens}
         centerIndex={0}
@@ -283,9 +283,9 @@ describe("UnifiedWordDisplay", () => {
     );
 
     expect(screen.getByText("ONLY")).toBeInTheDocument();
-    const word = screen.getByText("ONLY");
-    expect(word).toHaveStyle({ opacity: 1.0 });
-    expect(word).toHaveAttribute("data-center", "true");
+    const slot = container.querySelector(".unified-word-slot");
+    expect(slot).toHaveStyle({ opacity: 1.0 });
+    expect(slot).toHaveAttribute("data-center", "true");
   });
 
   it("renders with aria attributes", () => {
@@ -324,9 +324,9 @@ describe("UnifiedWordDisplay", () => {
       />
     );
 
-    const words = container.querySelectorAll(".unified-word");
-    words.forEach((word) => {
-      const style = window.getComputedStyle(word);
+    const slots = container.querySelectorAll(".unified-word-slot");
+    slots.forEach((slot) => {
+      const style = window.getComputedStyle(slot);
       expect(style.transition).toContain("opacity");
     });
   });

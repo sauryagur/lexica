@@ -46,11 +46,13 @@ function calculateOpacity(distanceFromCenter: number): number {
  * 
  * Features:
  * - Single flexbox container spanning 90vw
+ * - Fixed-width slots for each word position (eliminates bouncing)
  * - All words (peripheral + active) in one layout
  * - Opacity gradient based on distance from center
  * - ORP line indicator on active word only
  * - Much larger text for comfortable reading
  * - No interference between components
+ * - Text centered within each slot, slots never move
  */
 function UnifiedWordDisplayComponent({
   tokens,
@@ -126,6 +128,9 @@ function UnifiedWordDisplayComponent({
     containerRef.current.style.transform = `translateX(${shiftNeeded}px)`;
   }, [tokens, centerIndex, fontSize]);
 
+  // Calculate fixed slot width based on number of tokens
+  const slotWidth = tokens.length > 0 ? `${90 / tokens.length}vw` : "18vw";
+
   return (
     <div
       className="unified-word-display-wrapper"
@@ -165,8 +170,7 @@ function UnifiedWordDisplayComponent({
         style={{
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-around",
-          gap: "3em",
+          justifyContent: "center",
           fontSize: `${fontSize}px`,
           lineHeight: "var(--reader-line-height)",
           whiteSpace: "nowrap",
@@ -178,7 +182,7 @@ function UnifiedWordDisplayComponent({
           const { token, opacity, isCenter } = data;
           
           if (!token) {
-            // Empty slot at document boundaries
+            // Empty slot at document boundaries - fixed width slot
             return (
               <div
                 key={index}
@@ -186,9 +190,12 @@ function UnifiedWordDisplayComponent({
                   wordRefs.current[index] = el;
                 }}
                 style={{
-                  display: "inline-block",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: slotWidth,
+                  minWidth: "150px",
                   opacity: 0,
-                  minWidth: "1em",
                 }}
               >
                 {"\u00A0"}
@@ -213,20 +220,31 @@ function UnifiedWordDisplayComponent({
               ref={(el) => {
                 wordRefs.current[index] = el;
               }}
-              className="reader-text unified-word"
+              className="reader-text unified-word-slot"
               data-center={isCenter}
               data-distance={data.distanceFromCenter}
               style={{
                 position: "relative",
-                display: "inline-block",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: slotWidth,
+                minWidth: "150px",
                 opacity,
-                color: "var(--foreground)",
                 transition: "opacity 0.15s ease-out",
                 zIndex: isCenter ? 5 : 1,
-                ...styling,
               }}
             >
-              {token.text}
+              <span
+                className="unified-word-content"
+                style={{
+                  display: "inline-block",
+                  color: "var(--foreground)",
+                  ...styling,
+                }}
+              >
+                {token.text}
+              </span>
             </div>
           );
         })}
