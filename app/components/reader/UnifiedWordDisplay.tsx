@@ -77,7 +77,7 @@ function UnifiedWordDisplayComponent({
 
       {/* Static container with fixed width - never moves */}
       <div
-        className="flex items-center justify-around"
+        className="flex items-center justify-between"
         style={{
           width: "90vw",
           fontSize: `${fontSize}px`,
