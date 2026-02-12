@@ -7,7 +7,7 @@ export default defineConfig({
   test: {
     environment: "happy-dom",
     globals: true,
-    setupFiles: [],
+    setupFiles: ["./vitest.setup.ts"],
     include: ["__tests__/**/*.test.{ts,tsx}", "__tests__/**/*.spec.{ts,tsx}"],
     exclude: ["node_modules", ".next", "dist"],
     coverage: {
@@ -25,7 +25,8 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      "@": resolve(__dirname, "./app"),
+      "@/app": resolve(__dirname, "./app"),
+      "@": resolve(__dirname, "."),
     },
   },
 });
