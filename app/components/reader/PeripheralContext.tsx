@@ -122,7 +122,7 @@ function PeripheralContextComponent({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        gap: "0.5em",
+        gap: "2em",
         fontSize: `${fontSize}px`,
         lineHeight: "var(--reader-line-height)",
         pointerEvents: "none",
