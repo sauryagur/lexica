@@ -20,7 +20,7 @@
   --font-ui: var(--font-geist-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif);
   
   /* Default Reader Settings */
-  --reader-font-size: 18px;
+  --reader-font-size: 36px;
   --reader-line-height: 1.6;
   
   /* UI Chrome */
@@ -93,8 +93,9 @@ body {
 /* Hardware acceleration for performance-critical elements */
 .reader-text,
 .peripheral-token,
-.word-lane,
-.peripheral-context,
+.unified-word,
+.unified-word-display,
+.unified-word-display-wrapper,
 .orp-line,
 .breadcrumb,
 .progress-indicator,

@@ -31,7 +31,7 @@ export type ReaderState = {
  */
 export const DEFAULT_SETTINGS: ReaderSettings = {
   theme: "dark",
-  fontSize: 18,
+  fontSize: 36,
   windowRadius: 2,
   skipImages: false,
 };
