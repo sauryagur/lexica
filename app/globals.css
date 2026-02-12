@@ -16,8 +16,8 @@
   --opacity-far: 0.20;        /* 20% - Neighbors ±2 */
   
   /* Typography */
-  --font-reader: 'Merriweather', Georgia, serif;
-  --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  --font-reader: var(--font-merriweather, 'Merriweather', Georgia, serif);
+  --font-ui: var(--font-geist-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif);
   
   /* Default Reader Settings */
   --reader-font-size: 18px;
