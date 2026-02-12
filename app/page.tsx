@@ -1,65 +1,191 @@
-import Image from "next/image";
+/**
+ * Main Application Page
+ * Entry point for Lexica reading interface
+ */
 
+"use client";
+
+import { ReaderProvider, useReader } from "./context/ReaderContext";
+import { ReaderEngine } from "./components/reader/ReaderEngine";
+import { FileUpload } from "./components/ui/FileUpload";
+import { useReaderPersistence } from "./hooks/useReaderPersistence";
+import { ErrorBoundary } from "./components/ErrorBoundary";
+import { useState } from "react";
+import { Toast } from "./components/ui/Toast";
+
+/**
+ * Upload Prompt Component
+ * Shown when no document is loaded
+ */
+function UploadPrompt() {
+  const { loadDocument } = useReader();
+  const [error, setError] = useState<string | null>(null);
+
+  const handleFileLoad = (content: string, fileName: string) => {
+    try {
+      // Validate content
+      if (!content || content.trim().length === 0) {
+        setError("File is empty");
+        return;
+      }
+
+      // Generate a simple doc ID from filename
+      const docId = fileName.replace(/\.[^/.]+$/, "");
+      loadDocument(content, docId, fileName);
+      setError(null);
+    } catch (err) {
+      console.error("Failed to load document:", err);
+      setError("Failed to load document. Please try again.");
+    }
+  };
+
+  const loadSampleDocument = async () => {
+    try {
+      const response = await fetch("/sample.md");
+      if (!response.ok) {
+        throw new Error("Failed to load sample document");
+      }
+      const content = await response.text();
+      loadDocument(content, "sample", "Sample Document");
+      setError(null);
+    } catch (err) {
+      console.error("Failed to load sample document:", err);
+      setError("Failed to load sample document");
+    }
+  };
+
+  return (
+    <div
+      className="upload-prompt"
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        width: "100vw",
+        height: "100vh",
+        backgroundColor: "var(--background)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <div
+        style={{
+          textAlign: "center",
+          maxWidth: "32rem",
+          padding: "2rem",
+        }}
+      >
+        {/* Title */}
+        <h1
+          style={{
+            fontSize: "3rem",
+            fontFamily: "var(--font-reading)",
+            fontWeight: 400,
+            color: "var(--foreground)",
+            marginBottom: "0.5rem",
+            letterSpacing: "-0.02em",
+          }}
+        >
+          Lexica
+        </h1>
+
+        {/* Subtitle */}
+        <p
+          style={{
+            fontSize: "1rem",
+            fontFamily: "var(--font-ui)",
+            color: "var(--foreground)",
+            opacity: 0.6,
+            marginBottom: "3rem",
+          }}
+        >
+          Focus-scaffolding reading interface
+        </p>
+
+        {/* Upload button */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "1rem",
+          }}
+        >
+          <FileUpload onFileLoad={handleFileLoad} />
+
+          {/* Sample document link */}
+          <button
+            onClick={loadSampleDocument}
+            style={{
+              background: "none",
+              border: "none",
+              color: "var(--foreground)",
+              opacity: 0.5,
+              fontSize: "0.875rem",
+              fontFamily: "var(--font-ui)",
+              cursor: "pointer",
+              textDecoration: "underline",
+              padding: "0.5rem",
+              transition: "opacity 0.2s",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.opacity = "0.8";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.opacity = "0.5";
+            }}
+          >
+            or try a sample document
+          </button>
+        </div>
+
+        {/* Error toast */}
+        {error && (
+          <Toast
+            message={error}
+            type="error"
+            duration={5000}
+            onDismiss={() => setError(null)}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Main App Component (inside ReaderProvider)
+ */
+function MainApp() {
+  const { pages, anchors } = useReader();
+
+  // Enable persistence
+  useReaderPersistence({
+    enabled: true,
+    autoSaveInterval: 100,
+    debounceMs: 300,
+  });
+
+  // Show upload prompt if no document loaded
+  if (!pages || !anchors) {
+    return <UploadPrompt />;
+  }
+
+  // Show reader interface when document loaded
+  return <ReaderEngine />;
+}
+
+/**
+ * Root Page Component
+ * Wraps app in ReaderProvider
+ */
 export default function Home() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+    <ErrorBoundary>
+      <ReaderProvider>
+        <MainApp />
+      </ReaderProvider>
+    </ErrorBoundary>
   );
 }
